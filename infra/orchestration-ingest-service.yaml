@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Orchestration Ingest stack resources"
+
+Parameters:
+  ImageName:
+    Type: String
+    Description: Name of image to deploy
+    Default: "orchestration-ingest-service:0.0.1-SNAPSHOT"
+
+Resources:
+
+  ECSCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: "OrchestrationIngestService"
+      CapacityProviders:
+        - "FARGATE"
+        - "FARGATE_SPOT"
+
+  ECSService:
+    Type: "AWS::ECS::Service"
+    Properties:
+      ServiceName: "OrchestrationIngestService"
+      Cluster: !GetAtt ECSCluster.Arn
+      DesiredCount: 1
+      LaunchType: "FARGATE"
+      PlatformVersion: "LATEST"
+      TaskDefinition: !Ref ECSTaskDefinition
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: false
+          Rollback: false
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          # TODO make these configurable / use imports
+          SecurityGroups:
+            - "sg-044f2730a12152212"
+          Subnets:
+            - "subnet-02ab925e2be3f47cf"
+      SchedulingStrategy: "REPLICA"
+
+  ECSTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      ContainerDefinitions:
+        -
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/bt-orchestration/${ImageName}"
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: "/ecs/OrchestrationIngestServiceTask"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Memory: 512
+          MemoryReservation: 256
+          Name: "OrchestrationIngestService"
+          PortMappings:
+            - ContainerPort: 8080
+              HostPort: 8080
+              Protocol: "tcp"
+      Family: "OrchestrationIngestServiceTask"
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      Cpu: "512"
+      Memory: "1024"
+
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "orchestrationIngestTaskExecutionRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+      Description: "Allows ECS tasks to call AWS services on your behalf."
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+
+  TaskRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: "orchestrationIngestTaskRole"
+      Description: "Allows ECS tasks to call AWS services on your behalf."
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: SQSPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'sqs:SendMessage'
+                Resource: 'arn:aws:sqs:eu-west-2:530514664619:conductor-execution-queue'
+        - PolicyName: DynamoDBPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:UpdateItem'
+                Resource: 'arn:aws:dynamodb:eu-west-2:530514664619:table/OrchestrationOrderStatus'
+
+
+  OrderStatusDynamoDBTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "OrderId"
+          AttributeType: "S"
+      TableName: "OrchestrationOrderStatus"
+      KeySchema:
+        - AttributeName: "OrderId"
+          KeyType: "HASH"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  ConductorExecutionSQSQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      DelaySeconds: "0"
+      MaximumMessageSize: "262144"
+      MessageRetentionPeriod: "345600"
+      ReceiveMessageWaitTimeSeconds: "0"
+      VisibilityTimeout: "30"
+      QueueName: "conductor-execution-queue"
