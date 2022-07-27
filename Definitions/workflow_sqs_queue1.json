@@ -1,0 +1,21 @@
+{
+    "name": "workflow_sqs_queue",
+    "event": "sqs:workflow-queue",
+    "condition": "$.itemId == 'product01'",
+    "actions": [
+        {
+            "action": "start_workflow",
+            "start_workflow": {
+                "name": "product01",
+                "input": {
+                    "orderId": "${orderId}",
+                    "itemId": "${itemId}",
+                    "quantity": "${quantity}",
+                    "eventStatus": "${eventStatus}"
+                }
+            },
+            "expandInlineJSON": false
+        }
+    ],
+    "active": true
+}

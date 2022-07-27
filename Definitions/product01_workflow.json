@@ -1,0 +1,247 @@
+{
+  "createTime": 1634021619147,
+  "updateTime": 1630694890267,
+  "name": "product01",
+  "description": "Workflow for product01",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "HTTP call for downstream systems",
+      "taskReferenceName": "product_processing",
+      "inputParameters": {
+        "http_request": {
+          "uri": "http://restfuldemo.herokuapp.com/appendorder",
+          "method": "POST",
+          "body": {
+            "item": "${workflow.input.itemId}",
+            "count": "${workflow.input.quantity}"
+          },
+          "connectionTimeOut": 5000,
+          "readTimeOut": 5000
+        }
+      },
+      "type": "HTTP",
+      "decisionCases": {
+        
+      },
+      "defaultCase": [
+        
+      ],
+      "forkTasks": [
+        
+      ],
+      "startDelay": 0,
+      "joinOn": [
+        
+      ],
+      "optional": false,
+      "defaultExclusiveJoinTask": [
+        
+      ],
+      "asyncComplete": false,
+      "loopOver": [
+        
+      ],
+      "createdBy": "",
+      "updatedBy": "",
+      "description": "extending the reorder task to have 3 retries and fixed delay",
+      "retryCount": 3,
+      "timeoutSeconds": 10,
+      "inputKeys": [
+        
+      ],
+      "outputKeys": [
+        
+      ],
+      "timeoutPolicy": "TIME_OUT_WF",
+      "retryLogic": "FIXED",
+      "retryDelaySeconds": 5,
+      "responseTimeoutSeconds": 5,
+      "inputTemplate": {
+        
+      },
+      "rateLimitPerFrequency": 0,
+      "rateLimitFrequencyInSeconds": 1,
+      "ownerEmail": "test.test@test.io",
+      "backoffScaleFactor": 1
+    },
+    {
+      "name": "order_checking",
+      "taskReferenceName": "switch_task",
+      "inputParameters": {
+        "switchCaseValue": "${product_processing.output.response.body}"
+      },
+      "type": "SWITCH",
+      "decisionCases": {
+        "Order failed.": [
+          {
+            "name": "call_kafka",
+            "taskReferenceName": "send_failed_message_kafka",
+            "inputParameters": {
+              "kafka_request": {
+                "topic": "workflow-completion",
+                "value": {
+                  "orderId": "${workflow.input.orderId}",
+                  "itemId": "${workflow.input.itemId}",
+                  "quantity": "${workflow.input.quantity}",
+                  "status": "failed"
+                },
+                "bootStrapServers": "localhost:29092"
+              },
+              "key": "",
+              "keySerializer": "org.apache.kafka.common.serialization.JsonSerializer"
+            },
+            "type": "KAFKA_PUBLISH",
+            "decisionCases": {
+              
+            },
+            "defaultCase": [
+              
+            ],
+            "forkTasks": [
+              
+            ],
+            "startDelay": 0,
+            "joinOn": [
+              
+            ],
+            "optional": false,
+            "defaultExclusiveJoinTask": [
+              
+            ],
+            "asyncComplete": false,
+            "loopOver": [
+              
+            ]
+          },
+          {
+            "name": "terminate_fail",
+            "taskReferenceName": "terminate_fail",
+            "inputParameters": {
+              "terminationStatus": "FAILED",
+              "workflowOutput": {
+                "response": "${product_processing.output.response.body}"
+              }
+            },
+            "type": "TERMINATE",
+            "decisionCases": {
+              
+            },
+            "defaultCase": [
+              
+            ],
+            "forkTasks": [
+              
+            ],
+            "startDelay": 0,
+            "joinOn": [
+              
+            ],
+            "optional": false,
+            "defaultExclusiveJoinTask": [
+              
+            ],
+            "asyncComplete": false,
+            "loopOver": [
+              
+            ]
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "call_kafka",
+          "taskReferenceName": "send_success_message_kafka",
+          "inputParameters": {
+            "kafka_request": {
+              "topic": "workflow-completion",
+              "value": {
+                "orderId": "${workflow.input.orderId}",
+                "itemId": "${workflow.input.itemId}",
+                "quantity": "${workflow.input.quantity}",
+                "status": "success"
+              },
+              "bootStrapServers": "localhost:29092"
+            },
+            "key": "",
+            "keySerializer": "org.apache.kafka.common.serialization.JsonSerializer"
+          },
+          "type": "KAFKA_PUBLISH",
+          "decisionCases": {
+            
+          },
+          "defaultCase": [
+            
+          ],
+          "forkTasks": [
+            
+          ],
+          "startDelay": 0,
+          "joinOn": [
+            
+          ],
+          "optional": false,
+          "defaultExclusiveJoinTask": [
+            
+          ],
+          "asyncComplete": false,
+          "loopOver": [
+            
+          ]
+        },
+        {
+          "name": "terminate_success",
+          "taskReferenceName": "terminate_success",
+          "inputParameters": {
+            "terminationStatus": "COMPLETED",
+            "workflowOutput": {
+              "response": "${product_processing.output.response.body}"
+            }
+          },
+          "type": "TERMINATE",
+          "decisionCases": {
+            
+          },
+          "defaultCase": [
+            
+          ],
+          "forkTasks": [
+            
+          ],
+          "startDelay": 0,
+          "joinOn": [
+            
+          ],
+          "optional": false,
+          "defaultExclusiveJoinTask": [
+            
+          ],
+          "asyncComplete": false,
+          "loopOver": [
+            
+          ]
+      }
+    ],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": [],
+      "evaluatorType": "value-param",
+      "expression": "switchCaseValue"
+    }
+	],
+    "inputParameters": [
+      
+    ],
+    "outputParameters": {
+      
+    },
+    "schemaVersion": 2,
+    "restartable": true,
+    "ownerEmail": "test@test.com",
+    "timeoutPolicy": "ALERT_ONLY",
+    "timeoutSeconds": 0
+  }
