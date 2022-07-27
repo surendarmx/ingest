@@ -29,8 +29,4 @@ public class KafkaMessageListener {
         dynamoDbRepo.saveMessage(mappedData);
     }
     
-    @KafkaListener(topics = "workflow-completion", containerFactory = "dynamicKafkaListenerContainerFactory")
-    public void completeEvent(Map<String,Object> mappedData) throws JsonProcessingException {
-        log.info("Received Message in group execute-group '{}' and topic workflow-completion", mappedData);
-    }
 }
