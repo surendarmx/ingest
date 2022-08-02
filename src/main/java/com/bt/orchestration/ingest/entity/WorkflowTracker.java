@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice.model;
+package com.bt.orchestration.ingest.entity;
 
 import java.io.Serializable;
 

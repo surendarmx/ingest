@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice;
+package com.bt.orchestration.ingest;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
@@ -7,10 +7,12 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.bt.orchestration.conductoringestservice.dao.DynamoDBRepository;
-import com.bt.orchestration.conductoringestservice.model.Transactions;
-import com.bt.orchestration.conductoringestservice.model.WorkflowTracker;
-import com.bt.orchestration.conductoringestservice.utils.GenerateUtil;
+import com.bt.orchestration.ingest.dao.DynamoDBRepository;
+import com.bt.orchestration.ingest.entity.OrderStatusTracker;
+import com.bt.orchestration.ingest.entity.Transactions;
+import com.bt.orchestration.ingest.entity.WorkflowTracker;
+import com.bt.orchestration.ingest.service.OrderIngestionService;
+import com.bt.orchestration.ingest.utils.GenerateUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,7 +51,10 @@ public class ConductorIngestServiceApplicationTests {
 
 	@Autowired
 	DynamoDBRepository dynamoDbRepo;
-
+	
+	@Autowired
+	OrderIngestionService ingestionService;
+	
 	@Autowired
 	private AmazonSQS amazonSQS;
 	@Autowired
@@ -93,7 +98,7 @@ public class ConductorIngestServiceApplicationTests {
 	@Test
 	public void shouldSaveMessageAndPublishToSqs() {
 		// When
-		dynamoDbRepo.saveMessage(generateUtil.getUpstreamData());
+		ingestionService.saveAndPushToSqs(generateUtil.getUpstreamData());
 		// Then
 		ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
                 .withQueueUrl(conductorQueueUrl)
@@ -104,6 +109,9 @@ public class ConductorIngestServiceApplicationTests {
 		PaginatedScanList<Transactions> records = dynamoDBMapper.scan(Transactions.class, new DynamoDBScanExpression());
 		assertEquals(1, records.size());
 		assertEquals(generateUtil.getUpstreamData().get("cartId"), records.get(0).getCartId());
+		PaginatedScanList<OrderStatusTracker> orders = dynamoDBMapper.scan(OrderStatusTracker.class, new DynamoDBScanExpression());
+		assertEquals(1, orders.size());
+		assertEquals(generateUtil.getUpstreamData().get("cartId"), orders.get(0).getOrderId());
 		PaginatedScanList<WorkflowTracker> workflows = dynamoDBMapper.scan(WorkflowTracker.class,
 				new DynamoDBScanExpression());
 		workflows.forEach(e -> log.info("workflows sent to SQS: {}", e));

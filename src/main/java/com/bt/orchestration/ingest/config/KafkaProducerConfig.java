@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice.config;
+package com.bt.orchestration.ingest.config;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +17,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import com.bt.orchestration.conductoringestservice.model.CartDetails;
+import com.bt.orchestration.ingest.model.CartDetails;
 
 @Configuration
 @EnableKafka

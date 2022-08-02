@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice.sqs;
+package com.bt.orchestration.ingest.sqs;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
-import com.bt.orchestration.conductoringestservice.model.WorkflowTracker;
+import com.bt.orchestration.ingest.entity.WorkflowTracker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

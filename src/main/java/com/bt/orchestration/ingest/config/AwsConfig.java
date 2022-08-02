@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice.config;
+package com.bt.orchestration.ingest.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

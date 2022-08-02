@@ -1,32 +1,29 @@
 package com.bt.orchestration.ingest.listener;
 
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.bt.orchestration.ingest.dao.OrderStatusDao;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import com.bt.orchestration.ingest.dao.DynamoDBRepository;
+import com.bt.orchestration.ingest.service.OrderIngestionService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import lombok.extern.slf4j.Slf4j;
+
 @Component
 @Slf4j
 public class KafkaMessageListener {
-
-    private final OrderStatusDao orderStatusDao;
-    private final AmazonSQS amazonSQS;
-    private final String conductorQueueUrl;
-
-    public KafkaMessageListener(OrderStatusDao orderStatusDao, AmazonSQS amazonSQS,
-                                @Value("${conductor.queue.url}") String conductorQueueUrl) {
-        this.orderStatusDao = orderStatusDao;
-        this.amazonSQS = amazonSQS;
-        this.conductorQueueUrl = conductorQueueUrl;
+	
+	@Autowired
+	private OrderIngestionService ingestionService;
+	
+    @KafkaListener(topics = "provision", containerFactory = "dynamicKafkaListenerContainerFactory")
+    public void processEvent(Map<String,Object> mappedData) throws JsonProcessingException {
+        log.info("Received Message in group execute-group '{}' and topic provision", mappedData.get("cartId"));
+        ingestionService.saveAndPushToSqs(mappedData);
     }
-
-    @KafkaListener(topics = "execute-workflow")
-    public void processEvent(String message) {
-        log.info("Received Message in group execute-group '{}'", message);
-        orderStatusDao.saveMessage(message);
-        amazonSQS.sendMessage(conductorQueueUrl, message);
-        log.info("Sent message to SQS");
-    }
+    
 }

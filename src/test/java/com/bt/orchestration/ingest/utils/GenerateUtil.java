@@ -1,4 +1,4 @@
-package com.bt.orchestration.conductoringestservice.utils;
+package com.bt.orchestration.ingest.utils;
 
 import java.util.HashMap;
 
