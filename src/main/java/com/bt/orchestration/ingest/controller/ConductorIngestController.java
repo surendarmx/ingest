@@ -38,8 +38,8 @@ public class ConductorIngestController {
 	@Autowired
 	private OrderIngestionService ingestionService;
 
-	@Value("${kafka.provision.topic-name}")
-	private String provisionTopic;
+	@Value("${kafka.execute-workflow.topic-name}")
+	private String executeWorkflowTopic;
 	
 	/*
 	 * @Autowired private AmazonSQS amazonSQS;
@@ -66,7 +66,7 @@ public class ConductorIngestController {
 	@PostMapping("/order")
 	public ResponseEntity<String> pushOrderMessage(@RequestHeader HttpHeaders headers,
 			@RequestBody Map<String, Object> mappedData) {
-		ingestionService.pushToKafkaTopic(mappedData,provisionTopic);
+		ingestionService.pushToKafkaTopic(mappedData,executeWorkflowTopic);
 		return ResponseEntity.ok().build();
 	}
 }

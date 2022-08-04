@@ -21,8 +21,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @Data
 @NoArgsConstructor
-@DynamoDBTable(tableName = "OrderStatusTracker")
-public class OrderStatusTracker implements Serializable{
+@DynamoDBTable(tableName = "OrderStatus")
+public class OrderStatus implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3791224874074298762L;
 
 	@DynamoDBHashKey(attributeName = "CartId")
     private String orderId;

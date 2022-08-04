@@ -15,7 +15,7 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 import com.bt.orchestration.ingest.dao.DynamoDBRepository;
 import com.bt.orchestration.ingest.model.CartDetails;
 import com.bt.orchestration.ingest.model.ItemDetails;
-import com.bt.orchestration.ingest.entity.WorkflowTracker;
+import com.bt.orchestration.ingest.entity.WorkflowExecutor;
 import com.bt.orchestration.ingest.sqs.SQSMessageForwarder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -65,10 +65,10 @@ public class OrderIngestionService {
 		CartDetails cartDetails = mapCartDetails(mappedData);
 		dynamoDbRepo.saveOrderStatus(cartDetails);
 		
-		List<WorkflowTracker> workflowList = new ArrayList<>();
+		List<WorkflowExecutor> workflowList = new ArrayList<>();
 		cartDetails.getItemDetails().forEach(e -> {
 
-			WorkflowTracker tracker = WorkflowTracker.builder().orderId(cartDetails.getCartId())
+			WorkflowExecutor tracker = WorkflowExecutor.builder().orderId(cartDetails.getCartId())
 					.itemId(e.getProductId()).quantity(e.getQuantity()).eventStatus(cartDetails.getEvent()).build();
 			workflowList.add(tracker);
 			log.info("Saving order to dynamo '{}'", tracker);

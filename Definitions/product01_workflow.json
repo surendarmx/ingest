@@ -79,7 +79,7 @@
             "taskReferenceName": "send_failed_message_kafka",
             "inputParameters": {
               "kafka_request": {
-                "topic": "workflow-completion",
+                "topic": "order-status",
                 "value": {
                   "orderId": "${workflow.input.orderId}",
                   "itemId": "${workflow.input.itemId}",
@@ -154,7 +154,7 @@
           "taskReferenceName": "send_success_message_kafka",
           "inputParameters": {
             "kafka_request": {
-              "topic": "workflow-completion",
+              "topic": "order-status",
               "value": {
                 "orderId": "${workflow.input.orderId}",
                 "itemId": "${workflow.input.itemId}",

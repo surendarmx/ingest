@@ -13,9 +13,9 @@ import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
 import com.amazonaws.services.dynamodbv2.model.ListTablesResult;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
 import com.bt.orchestration.ingest.model.CartDetails;
-import com.bt.orchestration.ingest.entity.OrderStatusTracker;
+import com.bt.orchestration.ingest.entity.OrderStatus;
 import com.bt.orchestration.ingest.entity.Transactions;
-import com.bt.orchestration.ingest.entity.WorkflowTracker;
+import com.bt.orchestration.ingest.entity.WorkflowExecutor;
 import com.bt.orchestration.ingest.sqs.SQSMessageForwarder;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,9 +37,9 @@ public class DynamoDBRepository {
 	private String sqsWorkflowQueueName;
 
 	public void saveOrderStatus(CartDetails cartDetails) {
-		createDynamicTables(OrderStatusTracker.class, "OrderStatusTracker");
+		createDynamicTables(OrderStatus.class, "OrderStatus");
 
-		OrderStatusTracker tracker = OrderStatusTracker.builder().orderId(cartDetails.getCartId())
+		OrderStatus tracker = OrderStatus.builder().orderId(cartDetails.getCartId())
 				.status(cartDetails.getStatus()).itemDetails(cartDetails.getItemDetails()).build();
 
 		log.info("Saving request to dynamo '{}'", tracker);
@@ -58,8 +58,8 @@ public class DynamoDBRepository {
 
 	}
 
-	public void saveWorkflowTracker(List<WorkflowTracker> workflowList) {
-		createDynamicTables(WorkflowTracker.class, "WorkflowTracker");
+	public void saveWorkflowTracker(List<WorkflowExecutor> workflowList) {
+		createDynamicTables(WorkflowExecutor.class, "WorkflowExecutor");
 		dynamoDBMapper.batchSave(workflowList);
 		workflowList.forEach(e -> log.info("Saved order to dynamo '{}'", e));
 	}
@@ -77,24 +77,4 @@ public class DynamoDBRepository {
 
 	}
 
-	/*
-	 * public void updateMessage(Map<String, Object> mappedData) {
-	 * log.info("Recevied message to update {}", mappedData); UpdateItemRequest
-	 * updateItemRequest = new UpdateItemRequest().withTableName("OrderTracker")
-	 * .addKeyEntry("CartId", new AttributeValue().withS((String)
-	 * mappedData.get("orderId"))); if (mappedData.get("status").equals("failed")) {
-	 * updateItemRequest.addKeyEntry("ItemId", new AttributeValue().withS((String)
-	 * mappedData.get("itemId"))) .addAttributeUpdatesEntry("ProcessedQuantity", new
-	 * AttributeValueUpdate() .withValue(new AttributeValue().withS((String)
-	 * mappedData.get("quantity")))); } else {
-	 * updateItemRequest.addKeyEntry("ItemId", new AttributeValue().withS((String)
-	 * mappedData.get("itemId"))) .addAttributeUpdatesEntry("FailedQuantity", new
-	 * AttributeValueUpdate() .withValue(new AttributeValue().withS((String)
-	 * mappedData.get("quantity")))); } try {
-	 * log.info("Updating DynamoDB with status: [{}] and request [{}]",
-	 * mappedData.get("status"), updateItemRequest); UpdateItemResult
-	 * updateItemResult = amazonDynamoDB.updateItem(updateItemRequest);
-	 * log.info("Updated DynamoDB with {}", updateItemResult); } catch (Exception e)
-	 * { log.info("Records not updated in DynamoDB due to {}", e.getMessage()); } }
-	 */
 }

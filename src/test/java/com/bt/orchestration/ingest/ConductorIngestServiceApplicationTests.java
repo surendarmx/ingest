@@ -8,9 +8,9 @@ import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
 import com.bt.orchestration.ingest.dao.DynamoDBRepository;
-import com.bt.orchestration.ingest.entity.OrderStatusTracker;
+import com.bt.orchestration.ingest.entity.OrderStatus;
 import com.bt.orchestration.ingest.entity.Transactions;
-import com.bt.orchestration.ingest.entity.WorkflowTracker;
+import com.bt.orchestration.ingest.entity.WorkflowExecutor;
 import com.bt.orchestration.ingest.service.OrderIngestionService;
 import com.bt.orchestration.ingest.utils.GenerateUtil;
 
@@ -109,10 +109,10 @@ public class ConductorIngestServiceApplicationTests {
 		PaginatedScanList<Transactions> records = dynamoDBMapper.scan(Transactions.class, new DynamoDBScanExpression());
 		assertEquals(1, records.size());
 		assertEquals(generateUtil.getUpstreamData().get("cartId"), records.get(0).getCartId());
-		PaginatedScanList<OrderStatusTracker> orders = dynamoDBMapper.scan(OrderStatusTracker.class, new DynamoDBScanExpression());
+		PaginatedScanList<OrderStatus> orders = dynamoDBMapper.scan(OrderStatus.class, new DynamoDBScanExpression());
 		assertEquals(1, orders.size());
 		assertEquals(generateUtil.getUpstreamData().get("cartId"), orders.get(0).getOrderId());
-		PaginatedScanList<WorkflowTracker> workflows = dynamoDBMapper.scan(WorkflowTracker.class,
+		PaginatedScanList<WorkflowExecutor> workflows = dynamoDBMapper.scan(WorkflowExecutor.class,
 				new DynamoDBScanExpression());
 		workflows.forEach(e -> log.info("workflows sent to SQS: {}", e));
 		assertEquals(2, workflows.size());
