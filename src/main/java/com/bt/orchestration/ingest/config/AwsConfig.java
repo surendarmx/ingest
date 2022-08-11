@@ -7,18 +7,12 @@ import org.springframework.context.annotation.Configuration;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 
 @Configuration
 public class AwsConfig {
 
-    @Value("${db.aws.endpoint}")
-    private String dbEndpoint;
-    
     @Value("${sqs.aws.endpoint}")
     private String sqsEndpoint;
 
@@ -46,13 +40,6 @@ public class AwsConfig {
 //        return new QueueMessagingTemplate(amazonSQSAsync);
 //    }
     
-    @Bean
-    public AmazonDynamoDB amazonDynamoDB() {
-        return AmazonDynamoDBClientBuilder.standard()
-                .withCredentials(getCredentialsProvider())
-                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(dbEndpoint, region))
-                .build();
-    }
 
 //    @Bean
 //    public AwsClientBuilder.EndpointConfiguration endpointConfiguration() {
@@ -64,8 +51,4 @@ public class AwsConfig {
         return new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret));
     }
     
-    @Bean
-    public DynamoDBMapper dynamoDBMapper(AmazonDynamoDB amazonDynamoDB) {
-        return new DynamoDBMapper(amazonDynamoDB);
-    }
 }

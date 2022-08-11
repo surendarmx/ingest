@@ -1,5 +1,6 @@
 package com.bt.orchestration.ingest.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
-import com.bt.orchestration.ingest.dao.DynamoDBRepository;
+import com.bt.orchestration.ingest.dao.MongoDBRepository;
 import com.bt.orchestration.ingest.model.CartDetails;
 import com.bt.orchestration.ingest.model.ItemDetails;
 import com.bt.orchestration.ingest.entity.WorkflowExecutor;
@@ -29,7 +30,7 @@ public class OrderIngestionService {
 	private KafkaTemplate<String, Map<String, Object>> dynamicKafkaTemplate;
 	
 	@Autowired
-	private DynamoDBRepository dynamoDbRepo;
+	private MongoDBRepository mongoDbRepo;
 
 	@Autowired
 	SQSMessageForwarder sqsMessageForwarder;
@@ -60,18 +61,19 @@ public class OrderIngestionService {
 
 	public void saveAndPushToSqs(Map<String, Object> mappedData) {
 
-		dynamoDbRepo.saveTransaction(mappedData);
+		mongoDbRepo.saveTransaction(mappedData);
 		
 		CartDetails cartDetails = mapCartDetails(mappedData);
-		dynamoDbRepo.saveOrderStatus(cartDetails);
+		mongoDbRepo.saveOrderStatus(cartDetails);
 		
 		List<WorkflowExecutor> workflowList = new ArrayList<>();
 		cartDetails.getItemDetails().forEach(e -> {
 
 			WorkflowExecutor tracker = WorkflowExecutor.builder().orderId(cartDetails.getCartId())
-					.itemId(e.getProductId()).quantity(e.getQuantity()).eventStatus(cartDetails.getEvent()).build();
+					.itemId(e.getProductId()).quantity(e.getQuantity()).eventStatus(cartDetails.getEvent())
+					.createdDate(LocalDateTime.now()).build();
 			workflowList.add(tracker);
-			log.info("Saving order to dynamo '{}'", tracker);
+			log.info("Saving order to mongo '{}'", tracker);
 			
 			try {
 				sqsMessageForwarder.pushMessage(tracker, sqsWorkflowQueueName);
@@ -80,7 +82,7 @@ public class OrderIngestionService {
 			}
 		});
 		
-		dynamoDbRepo.saveWorkflowTracker(workflowList);
+		mongoDbRepo.saveWorkflowTracker(workflowList);
 	}
 
 	public CartDetails mapCartDetails(Map<String, Object> mappedData) {

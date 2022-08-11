@@ -1,13 +1,10 @@
 package com.bt.orchestration.ingest;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBScanExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedScanList;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.PurgeQueueRequest;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.bt.orchestration.ingest.dao.DynamoDBRepository;
+import com.bt.orchestration.ingest.dao.MongoDBRepository;
 import com.bt.orchestration.ingest.entity.OrderStatus;
 import com.bt.orchestration.ingest.entity.Transactions;
 import com.bt.orchestration.ingest.entity.WorkflowExecutor;
@@ -50,15 +47,14 @@ public class ConductorIngestServiceApplicationTests {
 	private static final String QUEUE_NAME = "workflow-queue";
 
 	@Autowired
-	DynamoDBRepository dynamoDbRepo;
+	MongoDBRepository dynamoDbRepo;
 	
 	@Autowired
 	OrderIngestionService ingestionService;
 	
 	@Autowired
 	private AmazonSQS amazonSQS;
-	@Autowired
-	private DynamoDBMapper dynamoDBMapper;
+
 	@Autowired
 	private GenerateUtil generateUtil;
 

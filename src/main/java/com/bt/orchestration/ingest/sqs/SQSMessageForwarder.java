@@ -17,12 +17,14 @@ public class SQSMessageForwarder {
 	
 	@Autowired
 	private AmazonSQS amazonSQS;
+	
+	@Autowired
+	private ObjectMapper objMapper;
 
 	public void pushMessage(Object messageObject, String queueName) throws JsonProcessingException {
 		CreateQueueRequest conductorQueueRequest = new CreateQueueRequest(queueName);
 		String conductorQueueUrl = amazonSQS.createQueue(conductorQueueRequest).getQueueUrl();
 		log.info("Sending message to the queue '{}'", conductorQueueUrl);
-		ObjectMapper objMapper = new ObjectMapper();
 		String serializedJson = objMapper.writeValueAsString(messageObject);
 		log.info("Converted message to be sent to the queue '{}'", serializedJson);
 		SendMessageRequest sendMsgRequest = new SendMessageRequest().withQueueUrl(conductorQueueUrl).withMessageBody(serializedJson);
