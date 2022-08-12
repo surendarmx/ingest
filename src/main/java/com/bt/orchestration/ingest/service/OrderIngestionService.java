@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,9 @@ import com.bt.orchestration.ingest.dao.MongoDBRepository;
 import com.bt.orchestration.ingest.model.CartDetails;
 import com.bt.orchestration.ingest.model.ItemDetails;
 import com.bt.orchestration.ingest.entity.WorkflowExecutor;
+import com.bt.orchestration.ingest.exception.OrderIngestException;
 import com.bt.orchestration.ingest.sqs.SQSMessageForwarder;
+import com.bt.orchestration.ingest.utils.ValidateUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,18 +31,20 @@ public class OrderIngestionService {
 
 	@Autowired
 	private KafkaTemplate<String, Map<String, Object>> dynamicKafkaTemplate;
-	
+
 	@Autowired
 	private MongoDBRepository mongoDbRepo;
 
 	@Autowired
 	SQSMessageForwarder sqsMessageForwarder;
 
-	@Value("${sqs.conductor.name}")
-	private String sqsWorkflowQueueName;
-	
-	public void pushToKafkaTopic(Map<String, Object> mappedData, String provisionTopic) {
+	@Autowired
+	private ValidateUtil validateUtil;
 
+	
+
+	public void pushToKafkaTopic(Map<String, Object> mappedData, String provisionTopic) {
+		log.info("Pushing to Kafka Topic {}",provisionTopic);
 		ListenableFuture<SendResult<String, Map<String, Object>>> future = dynamicKafkaTemplate.send(provisionTopic,
 				mappedData);
 
@@ -59,13 +64,17 @@ public class OrderIngestionService {
 
 	}
 
-	public void saveAndPushToSqs(Map<String, Object> mappedData) {
-
+	public void saveAndPushToSqs(Map<String, Object> mappedData) throws OrderIngestException {
+		validateUtil.validateCartId(mappedData.get("cartId"));
+		
 		mongoDbRepo.saveTransaction(mappedData);
 		
 		CartDetails cartDetails = mapCartDetails(mappedData);
-		mongoDbRepo.saveOrderStatus(cartDetails);
 		
+		validateUtil.validateItemDetails(cartDetails.getItemDetails());
+		
+		mongoDbRepo.saveOrderStatus(cartDetails);
+
 		List<WorkflowExecutor> workflowList = new ArrayList<>();
 		cartDetails.getItemDetails().forEach(e -> {
 
@@ -74,14 +83,9 @@ public class OrderIngestionService {
 					.createdDate(LocalDateTime.now()).build();
 			workflowList.add(tracker);
 			log.info("Saving order to mongo '{}'", tracker);
-			
-			try {
-				sqsMessageForwarder.pushMessage(tracker, sqsWorkflowQueueName);
-			} catch (JsonProcessingException e1) {
-				log.error("Error occured due to '{}'", e1.getMessage());
-			}
 		});
-		
+
+		sqsMessageForwarder.pushWorkflowMessages(workflowList);
 		mongoDbRepo.saveWorkflowTracker(workflowList);
 	}
 

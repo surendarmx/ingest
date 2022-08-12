@@ -6,7 +6,11 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import com.bt.orchestration.ingest.model.CartDetails;
 import com.bt.orchestration.ingest.entity.OrderStatus;
@@ -46,5 +50,21 @@ public class MongoDBRepository {
 		mongoTemplate.insertAll(workflowList);
 		workflowList.forEach(e -> log.info("Saved order to mongo '{}'", e));
 	}
-	
+
+	public boolean isCartIdPresent(String cartId) {
+		return !ObjectUtils.isEmpty(getTransactionById(cartId));
+	}
+	public Transactions getTransactionById(String orderId) {
+		log.info("Fetching Transaction record for orderId {}",orderId);
+		Query query = new Query();
+		query.addCriteria(Criteria.where("CartId").is(orderId));
+		List<Transactions> orderStored = mongoTemplate.find(query,Transactions.class);
+		
+		if (!CollectionUtils.isEmpty(orderStored)) {
+			log.info("Transaction record is fetched {}",orderStored);
+			return orderStored.get(0);
+		}
+		log.info("No Transaction record is fetched for the id {}",orderId);
+		return null;
+	}
 }
